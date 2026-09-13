@@ -89,4 +89,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    
+      - name: Prepare Telegram notification
+        env:
+          NOTES: ${{ steps.extract.outputs.notes }}
+        run: |
+          printf '%s\n' "$NOTES" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g' > notes.txt
+          {
+            echo '<b>Nexus Chrome ${{ steps.extract.outputs.tag }} 已发布</b>'
+            echo ''
+            echo '<pre>'
+            cat notes.txt
+            echo '</pre>'
+            echo ''
+            echo '📦 Docker: <code>docker pull ${{ secrets.DOCKER_USERNAME }}/nexus-chrome:${{ steps.extract.outputs.version }}</code>'
+            echo '🔗 <a href="https://github.com/${{ github.repository }}/releases/tag/${{ steps.extract.outputs.tag }}">查看 Release</a>'
+          } > telegram_msg.txt
+
