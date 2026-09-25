@@ -7,7 +7,7 @@ on:
     branches: [dev, master]
   workflow_call:
 
-# 全局权限声明
+# 全局权限声明：遵循最小权限原则
 permissions:
   contents: read
   pull-requests: read
@@ -16,7 +16,7 @@ permissions:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    name: Lint
+    name: Lint Code
     steps:
       - uses: actions/checkout@v6
       
@@ -79,7 +79,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    name: Test
+    name: Run Tests
     steps:
       - uses: actions/checkout@v6
       
@@ -119,5 +119,6 @@ jobs:
 
       - name: Run tests with coverage
         run: uv run pytest tests/ -v --cov=app --cov-report=term-missing
-        # 如果需要强制覆盖率达标，可添加 --cov-fail-under=80
+        # 如需强制覆盖率阈值，可添加 --cov-fail-under=80
+
 
