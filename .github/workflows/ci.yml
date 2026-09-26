@@ -7,40 +7,22 @@ on:
     branches: [dev, master]
   workflow_call:
 
-# 全局权限声明：遵循最小权限原则
-permissions:
-  contents: write
-  pull-requests: read
-  checks: write
-
 jobs:
   lint:
     runs-on: ubuntu-latest
-    name: Lint Code
+    name: Lint
     steps:
       - uses: actions/checkout@v6
-      
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
         with:
           version: "latest"
-
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-uv-lint-${{ hashFiles('pyproject.toml', 'uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-lint-
-
       - name: Sync dependencies
         run: uv sync --dev
-
       - name: Ruff check
         run: uv run ruff check .
 
@@ -49,64 +31,38 @@ jobs:
     name: Type Check
     steps:
       - uses: actions/checkout@v6
-      
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
         with:
           version: "latest"
-
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-uv-typecheck-${{ hashFiles('pyproject.toml', 'uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-typecheck-
-
       - name: Sync dependencies
         run: uv sync --dev
-
       - name: Install plugin dependencies
         run: uv pip install lark-oapi slack-bolt "dingtalk-stream>=0.24.1"
-
       - name: Pyright
         run: uv run pyright tests/
 
   test:
     runs-on: ubuntu-latest
-    name: Run Tests
+    name: Test
     steps:
       - uses: actions/checkout@v6
-      
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
         with:
           version: "latest"
-
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: ${{ runner.os }}-uv-test-${{ hashFiles('pyproject.toml', 'uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-test-
-
       - name: Sync dependencies
         run: uv sync --dev
-
       - name: Install plugin dependencies
         run: uv pip install lark-oapi slack-bolt "dingtalk-stream>=0.24.1"
-
       - name: Prepare config
         run: |
           mkdir -p data
@@ -116,9 +72,7 @@ jobs:
             web_port: 3000
             rmt_tmdbkey: 'dummy'
           EOF
-
       - name: Run tests with coverage
         run: uv run pytest tests/ -v --cov=app --cov-report=term-missing
-        # 如需强制覆盖率阈值，可添加 --cov-fail-under=80
 
 
