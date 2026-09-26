@@ -1,21 +1,13 @@
 name: Nexus Media Docker
 
-# 工作流全量触发规则：手动触发 + 推送v开头版本标签自动触发
 on:
   workflow_dispatch:
   push:
     tags:
       - v*
 
-# 全局声明运行所需权限，解决默认GITHUB_TOKEN权限不足问题
-permissions:
-  contents: write
-  packages: write
-  pull-requests: read
-
 jobs:
   ci:
-    # 复用仓库内已有的CI校验流程
     uses: ./.github/workflows/ci.yml
 
   build:
@@ -30,7 +22,7 @@ jobs:
       - name: Release version
         id: release_version
         run: |
-          echo "app_version=$(echo $GITHUB_REF_NAME | sed 's/v$.*$/\1/')" >> $GITHUB_ENV
+          echo "app_version=$(echo $GITHUB_REF_NAME | sed 's/v\(.*\)/\1/')" >> $GITHUB_ENV
 
       - name: Set Up QEMU
         uses: docker/setup-qemu-action@v4
@@ -56,9 +48,6 @@ jobs:
         with:
           platforms: linux/amd64,linux/arm64
           push: true
-          # 新增构建缓存配置，大幅缩减跨平台镜像构建耗时
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/nexus-media:latest
             ${{ secrets.DOCKER_USERNAME }}/nexus-media:${{ env.app_version }}
@@ -97,8 +86,6 @@ jobs:
           name: Nexus Media ${{ steps.extract.outputs.tag }}
           body: ${{ steps.extract.outputs.notes }}
           generate_release_notes: false
-          # 开启禁止覆盖重复Release，避免误操作覆盖已发布的正式版本
-          overwrite: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -107,12 +94,10 @@ jobs:
           NOTES: ${{ steps.extract.outputs.notes }}
         run: |
           printf '%s\n' "$NOTES" > notes_raw.txt
-          # 新增脚本存在性校验，避免脚本丢失导致整个发布流程中断
-          if [ ! -f scripts/release_notify.py ]; then
-            echo "# Nexus Media ${{ steps.extract.outputs.tag }} 已发布" > notes.txt
-          else
-            python3 scripts/release_notify.py < notes_raw.txt > notes.txt
-          fi
+          # changelog 是 GitHub markdown，Telegram HTML 不解析 markdown；
+          # 转成 Telegram 兼容 HTML（**x**→<b>x</b>、- →•、[t](u)→<a>），
+          # 避免 <pre> 内显示 **加粗** 等原始符号
+          python3 scripts/release_notify.py < notes_raw.txt > notes.txt
           {
             echo '<b>Nexus Media ${{ steps.extract.outputs.tag }} 已发布</b>'
             echo ''
@@ -129,5 +114,3 @@ jobs:
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           format: html
           message_file: telegram_msg.txt
-          url: https://github.com/${{ github.repository }}
-
