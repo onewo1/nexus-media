@@ -9,7 +9,7 @@ on:
 
 # 全局权限声明：遵循最小权限原则
 permissions:
-  contents: read
+  contents: write
   pull-requests: read
   checks: write
 
